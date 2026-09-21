@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Solar Savings Calculator</title>
+<meta name="description" content="See your estimated solar savings, system cost and payback in under 60 seconds." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     REBRAND HERE — everything a client needs is in this block
+     and the CONFIG object in the script at the bottom.
+     ============================================================ */
+  :root{
+    --ink:#16233B;
+    --ink-soft:#4A5670;
+    --base:#FFFFFF;
+    --panel:#EEF2F7;
+    --line:#DCE3EC;
+    --accent:#F5A524;      /* money + action */
+    --accent-ink:#7A4E00;
+    --good:#1E9E6A;
+    --radius:14px;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 60% at 50% -10%, #FCF3E0 0%, rgba(252,243,224,0) 55%),
+      var(--base);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:580px;margin:0 auto;padding:28px 18px 56px}
+
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+  .brand svg{display:block}
+  .brand .name{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:18px;letter-spacing:-.01em;color:var(--ink)}
+  .kicker{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:600;color:var(--ink-soft);
+    background:#fff;border:1px solid var(--line);
+    padding:6px 12px;border-radius:999px;margin-bottom:18px;
+  }
+  .kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--good)}
+
+  h1{
+    font-family:"Space Grotesk",sans-serif;
+    font-weight:600;font-size:clamp(27px,6.5vw,38px);
+    line-height:1.1;letter-spacing:-.02em;margin:0 0 10px;
+  }
+  .sub{color:var(--ink-soft);font-size:16px;margin:0 0 24px;max-width:44ch}
+
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 20px;box-shadow:0 1px 0 rgba(22,35,59,.03);
+  }
+  .q{margin:0 0 22px}
+  .q:last-child{margin-bottom:0}
+  .q > label{display:block;font-weight:600;font-size:15px;margin-bottom:3px}
+  .hint{font-size:13px;color:var(--ink-soft);margin:0 0 10px}
+
+  .billrow{display:flex;align-items:center;gap:10px}
+  .billrow .pound{
+    font-family:"Space Grotesk",sans-serif;font-size:22px;font-weight:600;color:var(--ink-soft);
+  }
+  input[type="number"]{
+    font-family:"Space Grotesk",sans-serif;
+    width:120px;font-size:22px;font-weight:600;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff;
+  }
+  input[type="number"]:focus,select:focus,input[type="text"]:focus,input[type="email"]:focus,input[type="tel"]:focus{
+    outline:2px solid var(--accent);outline-offset:1px;border-color:transparent;
+  }
+  .permo{font-size:13px;color:var(--ink-soft);white-space:nowrap}
+
+  .seg{display:flex;flex-wrap:wrap;gap:8px}
+  .seg button{
+    font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:10px 0;min-width:46px;flex:1;cursor:pointer;transition:background .12s,border-color .12s;
+  }
+  .seg button[aria-pressed="true"]{
+    background:var(--ink);color:#fff;border-color:var(--ink);
+  }
+  .seg.two button{flex:1}
+
+  .cta{
+    font-family:"Space Grotesk",sans-serif;
+    display:block;width:100%;font-size:17px;font-weight:600;
+    color:var(--accent-ink);background:var(--accent);
+    border:none;border-radius:12px;padding:15px;cursor:pointer;margin-top:4px;
+    transition:filter .12s,transform .05s;
+  }
+  .cta:hover{filter:brightness(1.04)}
+  .cta:active{transform:translateY(1px)}
+  .cta.dark{background:var(--ink);color:#fff}
+
+  /* ---------- results ---------- */
+  #result{display:none;margin-top:22px}
+  #result.show{display:block}
+
+  .headline{
+    background:var(--ink);color:#fff;border-radius:var(--radius);
+    padding:26px 22px;text-align:center;position:relative;overflow:hidden;
+  }
+  .headline .lab{font-size:13px;font-weight:600;color:#AEBAD4;letter-spacing:.01em;margin-bottom:6px}
+  .headline .big{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(46px,13vw,64px);line-height:1;letter-spacing:-.02em;color:var(--accent);
+  }
+  .headline .permonth{color:#DCE3EC;font-size:14px;margin-top:8px}
+
+  .stats{display:flex;gap:10px;margin-top:12px}
+  .stat{
+    flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center;
+  }
+  .stat .n{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:22px;letter-spacing:-.01em}
+  .stat .l{font-size:12px;color:var(--ink-soft);margin-top:3px}
+
+  .vat{
+    display:flex;gap:12px;align-items:flex-start;
+    margin-top:12px;background:#FCF3E0;border:1px solid #F1DCA6;border-radius:12px;padding:14px 16px;
+  }
+  .vat .icon{font-size:18px;line-height:1.3}
+  .vat b{color:var(--accent-ink)}
+  .vat .small{font-size:13px;color:var(--ink-soft);margin-top:2px}
+
+  /* ---------- lead gate ---------- */
+  .gate{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:#fff}
+  .gate h3{font-family:"Space Grotesk",sans-serif;font-size:19px;margin:0 0 4px;font-weight:600}
+  .gate p.g{color:var(--ink-soft);font-size:14px;margin:0 0 16px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+  .field input{
+    width:100%;font-family:inherit;font-size:16px;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;
+  }
+  .two-col{display:flex;gap:10px}
+  .two-col .field{flex:1}
+  .err{color:#C0392B;font-size:13px;margin:2px 0 0;display:none}
+  .field.invalid input{border-color:#C0392B}
+  .field.invalid .err{display:block}
+
+  /* ---------- full report (revealed after capture) ---------- */
+  #report{display:none;margin-top:14px}
+  #report.show{display:block}
+  .rep-grid{display:flex;gap:10px;flex-wrap:wrap}
+  .rep{flex:1 1 46%;background:var(--panel);border-radius:12px;padding:14px 16px}
+  .rep .l{font-size:12px;color:var(--ink-soft)}
+  .rep .n{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:20px;margin-top:2px}
+  .ticks{margin:16px 0 4px;padding:0;list-style:none}
+  .ticks li{display:flex;gap:9px;align-items:flex-start;font-size:14px;margin-bottom:8px;color:var(--ink)}
+  .ticks .t{color:var(--good);font-weight:700}
+  .confirm{background:#EAF7F0;border:1px solid #BEE6D2;border-radius:12px;padding:14px 16px;font-size:14px;margin-top:14px;display:none}
+  .confirm.show{display:block}
+
+  .disc{font-size:12px;color:var(--ink-soft);margin-top:16px;line-height:1.5}
+
+  /* ---------- footer / builder strip ---------- */
+  .built{
+    margin-top:22px;border-top:1px solid var(--line);padding-top:16px;
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .built .who{font-size:13px;color:var(--ink-soft)}
+  .built a{
+    font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;
+    border-bottom:2px solid var(--accent);padding-bottom:1px;
+  }
+  @media (max-width:420px){
+    .stats{flex-direction:column}
+    .two-col{flex-direction:column;gap:0}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#F5A524"/><g stroke="#F5A524" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.5" y1="4.5" x2="6.2" y2="6.2"/><line x1="17.8" y1="17.8" x2="19.5" y2="19.5"/><line x1="4.5" y1="19.5" x2="6.2" y2="17.8"/><line x1="17.8" y1="6.2" x2="19.5" y2="4.5"/></g></svg>
+    <span class="name">Futura Digital</span>
+  </div>
+  <span class="kicker" id="brandKicker"><span class="dot"></span><span id="brandLabel">Solar Savings Estimator</span></span>
+  <h1>Find out how much you could save with solar</h1>
+  <p class="sub">A few quick questions and you'll see your estimated savings, system cost and payback. Takes about a minute.</p>
+
+  <div class="card">
+    <div class="q">
+      <label for="bill">What's your typical monthly electricity bill?</label>
+      <p class="hint">Use your last bill or two for a closer estimate.</p>
+      <div class="billrow">
+        <span class="pound">£</span>
+        <input type="number" id="bill" min="20" max="1500" step="5" value="140" inputmode="numeric" />
+        <span class="permo">per month</span>
+      </div>
+    </div>
+
+    <div class="q">
+      <label>How many people live in your home?</label>
+      <p class="hint">More people usually means more daytime usage, and bigger savings.</p>
+      <div class="seg" id="occ" role="group" aria-label="Occupants">
+        <button type="button" data-v="1">1</button>
+        <button type="button" data-v="2" aria-pressed="true">2</button>
+        <button type="button" data-v="3">3</button>
+        <button type="button" data-v="4">4</button>
+        <button type="button" data-v="5">5</button>
+        <button type="button" data-v="6">6+</button>
+      </div>
+    </div>
+
+    <div class="q">
+      <label>Do you own the property?</label>
+      <p class="hint">Panels go on the roof, so the owner needs to approve.</p>
+      <div class="seg two" id="own" role="group" aria-label="Own property">
+        <button type="button" data-v="1" aria-pressed="true">Yes</button>
+        <button type="button" data-v="0">No</button>
+      </div>
+    </div>
+
+    <div class="q">
+      <label>Any garage, outbuilding or barn?</label>
+      <p class="hint">Extra roof space can fit a larger system and improve your return.</p>
+      <div class="seg two" id="out" role="group" aria-label="Outbuilding">
+        <button type="button" data-v="1">Yes</button>
+        <button type="button" data-v="0" aria-pressed="true">No</button>
+      </div>
+    </div>
+
+    <button class="cta" id="calcBtn">See my savings</button>
+  </div>
+
+  <section id="result" aria-live="polite">
+    <div class="headline">
+      <div class="lab">Estimated annual saving</div>
+      <div class="big" id="annual">£0</div>
+      <div class="permonth" id="permonth">around £0 a month off your bills and export income</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="n" id="payback">0 yrs</div><div class="l">until it pays for itself</div></div>
+      <div class="stat"><div class="n" id="lifetime">£0</div><div class="l">saved over 25 years</div></div>
+      <div class="stat"><div class="n" id="co2">0t</div><div class="l">CO₂ saved per year</div></div>
+    </div>
+
+    <div class="vat">
+      <span class="icon">⏳</span>
+      <div>
+        <b>0% VAT ends 31 March 2027.</b> Installing before then saves you roughly <b id="vatSave">£0</b> in VAT on a system this size.
+        <div class="small">After the deadline, 20% VAT is expected to return on solar and battery installs.</div>
+      </div>
+    </div>
+
+    <div class="gate" id="gate">
+      <h3>Want the exact figures for your home?</h3>
+      <p class="g">Get your full breakdown, system design and a free no-obligation survey. Most surveys are booked within 5 working days.</p>
+      <div class="two-col">
+        <div class="field" id="f-name"><label for="name">Full name</label><input type="text" id="name" autocomplete="name" /><p class="err">Please add your name.</p></div>
+        <div class="field" id="f-postcode"><label for="postcode">Postcode</label><input type="text" id="postcode" autocomplete="postal-code" /><p class="err">Please add your postcode.</p></div>
+      </div>
+      <div class="two-col">
+        <div class="field" id="f-email"><label for="email">Email</label><input type="email" id="email" autocomplete="email" /><p class="err">Please add a valid email.</p></div>
+        <div class="field" id="f-phone"><label for="phone">Phone</label><input type="tel" id="phone" autocomplete="tel" /><p class="err">Please add your phone number.</p></div>
+      </div>
+      <button class="cta" id="sendBtn">Send my full breakdown</button>
+    </div>
+
+    <section id="report" aria-live="polite">
+      <div class="confirm show" id="confirm">
+        <b>Sent.</b> Your breakdown is on its way. We'll be in touch to book your free survey.
+      </div>
+      <div class="rep-grid" style="margin-top:14px">
+        <div class="rep"><div class="l">Recommended system size</div><div class="n" id="size">0 kW</div></div>
+        <div class="rep"><div class="l">Estimated install cost</div><div class="n" id="cost">£0</div></div>
+        <div class="rep"><div class="l">Estimated monthly benefit</div><div class="n" id="monthly">£0</div></div>
+        <div class="rep"><div class="l">Estimated payback</div><div class="n" id="payback2">0 yrs</div></div>
+      </div>
+      <ul class="ticks">
+        <li><span class="t">✓</span><span>Conservative estimate using UK-average generation and Smart Export Guarantee rates.</span></li>
+        <li><span class="t">✓</span><span>A free survey gives you exact figures for your roof direction, shading and usage.</span></li>
+        <li><span class="t">✓</span><span id="vatTick">Beat the 31 March 2027 deadline to keep 0% VAT on the install.</span></li>
+      </ul>
+      <a class="cta dark" id="bookBtn" href="#" style="text-decoration:none;text-align:center;line-height:1.2">Book my free survey</a>
+    </section>
+
+    <p class="disc">These are conservative estimates based on typical UK usage and current export rates. Your actual figures depend on roof direction, shading, tariff and usage. A free survey confirms the exact numbers with no obligation.</p>
+  </section>
+
+  <div class="built" id="builtStrip">
+    <span class="who" id="builtWho">Demo calculator</span>
+    <a id="builtLink" href="#" target="_blank" rel="noopener">Want one branded to your business? Book a 15-min call</a>
+  </div>
+</main>
+
+<script>
+/* ================================================================
+   CONFIG — edit these per deployment. This is the only block you
+   normally touch to rebrand or wire the calculator to a client.
+   ================================================================ */
+const CONFIG = {
+  brandLabel:   "Solar Savings Estimator",   // pill text under the Futura mark
+  ctaUrl:       "https://futura-digital.vercel.app/",  // where "Book my free survey" goes
+  leadWebhookUrl: "",   // POST leads here. Point this at ONE endpoint (e.g. a Make/n8n or GHL inbound
+                        // webhook) that fans the lead out to GHL and Slack. Empty = demo mode, no send.
+  showBuiltStrip: true, // the "want one for your business" strip at the bottom
+  builtWho:     "A live demo by Futura Digital",
+  builtCtaUrl:  "https://futura-digital.vercel.app/",  // where an installer books a call with Futura
+
+  // --- estimate assumptions (safe UK-average defaults) ---
+  unitRate:     0.28,   // £/kWh electricity
+  segRate:      0.15,   // £/kWh export (Smart Export Guarantee)
+  genPerKw:     950,    // kWh generated per kW per year (SW UK)
+  costPerKw:    1800,   // £ install cost per kW
+  co2PerKwh:    0.207,  // kg CO2 offset per kWh
+  vatRate:      0.20,   // VAT saved by installing before the deadline
+  years:        25
+};
+
+const state = { occ:2, own:1, out:0 };
+
+/* segmented controls */
+function wireSeg(id, key){
+  const g = document.getElementById(id);
+  g.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    [...g.children].forEach(c=>c.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    state[key] = parseInt(b.dataset.v,10);
+  });
+}
+wireSeg('occ','occ'); wireSeg('own','own'); wireSeg('out','out');
+
+/* apply config to chrome */
+document.getElementById('brandLabel').textContent = CONFIG.brandLabel;
+if(!CONFIG.showBuiltStrip){ document.getElementById('builtStrip').style.display='none'; }
+else{
+  document.getElementById('builtWho').textContent = CONFIG.builtWho;
+  document.getElementById('builtLink').href = CONFIG.builtCtaUrl;
+}
+document.getElementById('bookBtn').href = CONFIG.ctaUrl;
+
+const fmt = n => '£' + Math.round(n).toLocaleString('en-GB');
+
+let last = null;
+
+function estimate(){
+  const bill = Math.max(20, Math.min(1500, parseFloat(document.getElementById('bill').value)||140));
+  const annualBill = bill*12;
+  const usageKwh = annualBill / CONFIG.unitRate;
+
+  // size system to cover usage, nudged by occupants; capped, larger cap if outbuilding
+  let sizeKw = usageKwh / CONFIG.genPerKw;
+  sizeKw *= (0.85 + state.occ*0.06);            // more occupants -> slightly larger recommendation
+  const cap = state.out ? 8 : 5.5;
+  sizeKw = Math.max(2, Math.min(cap, sizeKw));
+  sizeKw = Math.round(sizeKw*10)/10;
+
+  const genKwh = sizeKw * CONFIG.genPerKw;
+  // self-consumption rises a little with more people at home
+  const selfFrac = Math.min(0.55, 0.32 + state.occ*0.03);
+  const saveSelf = genKwh*selfFrac*CONFIG.unitRate;
+  const saveExport = genKwh*(1-selfFrac)*CONFIG.segRate;
+  const annual = saveSelf + saveExport;
+
+  const cost = Math.round(sizeKw*CONFIG.costPerKw/10)*10;
+  const payback = cost/annual;
+  const lifetime = annual*CONFIG.years;
+  const co2 = genKwh*CONFIG.co2PerKwh/1000;
+  const vatSave = cost*CONFIG.vatRate;
+
+  return { bill, annual, cost, payback, lifetime, co2, vatSave, sizeKw,
+           monthly: annual/12, own: state.own };
+}
+
+function animateCount(el, target, prefix){
+  const dur=650, start=performance.now();
+  function step(now){
+    const p=Math.min(1,(now-start)/dur);
+    const e=1-Math.pow(1-p,3);
+    el.textContent = prefix + Math.round(target*e).toLocaleString('en-GB');
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+document.getElementById('calcBtn').addEventListener('click', ()=>{
+  const r = estimate(); last = r;
+
+  document.getElementById('permonth').textContent =
+    'around ' + fmt(r.monthly) + ' a month off your bills and export income';
+  document.getElementById('payback').textContent = r.payback.toFixed(1)+' yrs';
+  document.getElementById('lifetime').textContent = fmt(r.lifetime);
+  document.getElementById('co2').textContent = r.co2.toFixed(2)+'t';
+  document.getElementById('vatSave').textContent = fmt(r.vatSave);
+
+  document.getElementById('size').textContent = r.sizeKw.toFixed(1)+' kW';
+  document.getElementById('cost').textContent = fmt(r.cost);
+  document.getElementById('monthly').textContent = fmt(r.monthly);
+  document.getElementById('payback2').textContent = r.payback.toFixed(1)+' yrs';
+
+  const res = document.getElementById('result');
+  res.classList.add('show');
+  animateCount(document.getElementById('annual'), r.annual, '£');
+  res.scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+/* lead capture */
+function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+document.getElementById('sendBtn').addEventListener('click', async ()=>{
+  const fields = [
+    ['f-name','name', v=>v.trim().length>1],
+    ['f-postcode','postcode', v=>v.trim().length>3],
+    ['f-email','email', validEmail],
+    ['f-phone','phone', v=>v.replace(/\D/g,'').length>=7],
+  ];
+  let ok = true;
+  const data = {};
+  fields.forEach(([fid,id,test])=>{
+    const val = document.getElementById(id).value;
+    data[id]=val;
+    const wrap = document.getElementById(fid);
+    if(!test(val)){ wrap.classList.add('invalid'); ok=false; }
+    else wrap.classList.remove('invalid');
+  });
+  if(!ok) return;
+
+  const payload = Object.assign({}, data, last, {
+    source:'solar-savings-calculator',
+    submittedAt:new Date().toISOString()
+  });
+
+  // Deliver the lead. On a real deploy set CONFIG.leadWebhookUrl to your
+  // GoHighLevel inbound webhook. In demo mode we just store it locally.
+  if(CONFIG.leadWebhookUrl){
+    try{
+      await fetch(CONFIG.leadWebhookUrl,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+    }catch(e){ /* fail quietly, still confirm to the user */ }
+  } else {
+    try{
+      const q = JSON.parse(localStorage.getItem('solar_leads')||'[]');
+      q.push(payload); localStorage.setItem('solar_leads', JSON.stringify(q));
+    }catch(e){}
+  }
+
+  document.getElementById('gate').style.display='none';
+  const rep = document.getElementById('report');
+  rep.classList.add('show');
+  rep.scrollIntoView({behavior:'smooth', block:'start'});
+});
+</script>
+</body>
+</html>
